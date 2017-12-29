@@ -1,0 +1,41 @@
+---
+
+#- include: packages.yml
+
+- name: Update the apt cache
+  apt:
+    cache_valid_time: 3600
+    update_cache: yes
+
+- name: ClamAV  Install packages
+  apt: name={{item}} state=installed
+  with_items:
+    - clamav
+    - clamav-daemon
+    - apparmor-utils
+
+- name: Let clamav run as root
+  command: aa-complain clamd
+  changed_when: false
+  notify: restart clamav
+
+#- include: fresh.yml
+#  when: clamav_fresh == true
+
+- name: Copy clamd.conf
+  copy: src=files/clamd.conf dest=/etc/clamav/clamd.conf
+  notify: restart clamav
+
+- name: Creates clamav directory
+  file: path=/opt/clamav-utils state=directory owner=clamav group=clamav mode=0775
+            
+- name: Creates quarantine directory
+  file: path=/opt/clamav-utils/quarantine state=directory owner=clamav group=clamav mode=0775
+
+- name: Copy clamd-response script
+  copy: src=files/clamd-response dest=/opt/clamav-utils/clamd-response owner=clamav group=clamav mode=0740
+
+- name: ClamAv | Start daemon
+  service:
+    name: clamav-daemon
+    state: started
