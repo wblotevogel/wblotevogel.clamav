@@ -1,0 +1,22 @@
+---
+
+#- hosts: by-isae3402
+- hosts: "{{ host }}"
+  become: true
+
+  tasks:
+  - name: stop freshclam
+    service: name=clamav-freshclam state=stopped
+    changed_when: false
+
+  - name: print to stdout
+    command: freshclam
+    register: av_status
+
+  - debug: var=av_status.stdout_lines
+
+  - name: start freshclam
+    service: name=clamav-freshclam state=started
+    changed_when: false
+
+
